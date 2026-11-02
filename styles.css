@@ -1,14 +1,14 @@
 :root {
-  --bg: #f2f2f7;
-  --card: #ffffff;
-  --text: #1c1c1e;
-  --muted: #8a8a8e;
-  --border: #e5e5ea;
-  --accent: #2f6fed;
-  --good: #1f9d55;
-  --warn: #d48806;
-  --bad: #d64545;
-  --track: #e9e9ee;
+  --bg: #f7f0e1;
+  --card: #fffaf0;
+  --text: #3b2f25;
+  --muted: #8f7d6b;
+  --border: #ebdfc8;
+  --accent: #c8643b;
+  --good: #5e8c3a;
+  --warn: #cc8418;
+  --bad: #bf3b2c;
+  --track: #efe4cf;
   --radius: 14px;
   --tabbar-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -17,16 +17,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --card: #1c1c1e;
-    --text: #f2f2f7;
-    --muted: #8e8e93;
-    --border: #2c2c2e;
-    --accent: #5b8cff;
-    --good: #3cc47c;
-    --warn: #e8a33d;
-    --bad: #f06a6a;
-    --track: #2c2c2e;
+    --bg: #1c1713;
+    --card: #2a221c;
+    --text: #f4eadb;
+    --muted: #a8968a;
+    --border: #3b3129;
+    --accent: #e38a62;
+    --good: #93bf6e;
+    --warn: #e6a64c;
+    --bad: #ec7563;
+    --track: #3b3129;
   }
 }
 
@@ -199,7 +199,8 @@ dialog::backdrop { background: rgba(0, 0, 0, .4); }
 }
 .segmented label { padding: 6px 14px; border-radius: 7px; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; }
 .segmented input { display: none; }
-.segmented label:has(input:checked) { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.segmented label:has(input:checked) { background: var(--card); box-shadow: 0 1px 3px rgba(59, 47, 37, .15); }
+.cat { box-shadow: 0 1px 2px rgba(59, 47, 37, .06); }
 .segmented.wide { display: flex; margin-bottom: 16px; }
 .segmented.wide label { flex: 1; padding: 8px 0; }
 

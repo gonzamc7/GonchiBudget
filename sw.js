@@ -1,6 +1,6 @@
 // Offline support: serve the app from cache, refresh the cache in the background.
 // Bump VERSION when you change files so phones pick up the update.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `gonchibudget-${VERSION}`;
 const FILES = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-512.png'];
 
