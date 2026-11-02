@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GonchiBudget</title>
+
+  <!-- Home Screen app (iPhone) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Budget">
+  <meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="view-title">Budget</h1>
+    <button class="icon-btn" id="settings-btn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <!-- Budget view -->
+    <div id="view-budget">
+      <section>
+        <div class="section-head">
+          <h2>Expenses <span class="count" id="expense-count"></span></h2>
+          <button class="link-btn" id="add-expense-cat">+ Category</button>
+        </div>
+        <div class="list" id="expense-list"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Income <span class="count" id="income-count"></span></h2>
+          <button class="link-btn" id="add-income-cat">+ Category</button>
+        </div>
+        <div class="list" id="income-list"></div>
+      </section>
+      <p class="tip">Tap a category to log an expense or income in it.</p>
+    </div>
+
+    <!-- History view -->
+    <div id="view-history" hidden>
+      <div class="card history" id="entry-list"></div>
+      <p class="empty" id="entry-empty">Nothing logged yet.</p>
+    </div>
+  </main>
+
+  <!-- Bottom tab bar -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="budget">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Budget
+    </button>
+    <button class="add-btn" id="add-btn" aria-label="Add entry">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <button class="tab" data-view="history">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      History
+    </button>
+  </nav>
+
+  <!-- Add entry sheet -->
+  <dialog class="sheet" id="entry-sheet">
+    <form id="entry-form">
+      <div class="sheet-head">
+        <button type="button" class="link-btn" data-close>Cancel</button>
+        <div class="segmented" role="radiogroup">
+          <label><input type="radio" name="entry-type" value="expense" checked> Expense</label>
+          <label><input type="radio" name="entry-type" value="income"> Income</label>
+        </div>
+        <button type="submit" class="link-btn strong">Save</button>
+      </div>
+
+      <div class="amount-field">
+        <span id="entry-currency">$</span>
+        <input id="entry-amount" type="text" inputmode="decimal" placeholder="0" autocomplete="off" required>
+      </div>
+
+      <div class="chips" id="entry-chips"></div>
+      <p class="hint" id="entry-hint"></p>
+
+      <div class="field-group">
+        <label class="row-field">Date <input id="entry-date" type="date" required></label>
+        <label class="row-field">Note <input id="entry-note" type="text" placeholder="Optional" maxlength="80" enterkeyhint="done"></label>
+      </div>
+
+      <button type="submit" class="primary block">Save</button>
+    </form>
+  </dialog>
+
+  <!-- Create / edit category sheet -->
+  <dialog class="sheet" id="cat-sheet">
+    <form id="cat-form">
+      <div class="sheet-head">
+        <button type="button" class="link-btn" data-close>Cancel</button>
+        <h3 id="cat-title">New category</h3>
+        <button type="submit" class="link-btn strong">Save</button>
+      </div>
+      <div class="field-group">
+        <label class="row-field">Name <input id="cat-name" required maxlength="30" placeholder="e.g. Groceries"></label>
+        <label class="row-field"><span id="cat-amount-label">Budget</span>
+          <input id="cat-amount" type="text" inputmode="decimal" placeholder="0.00" required></label>
+      </div>
+      <div class="segmented wide" id="cat-period">
+        <label><input type="radio" name="cat-period" value="weekly"> Weekly</label>
+        <label><input type="radio" name="cat-period" value="monthly" checked> Monthly</label>
+        <label><input type="radio" name="cat-period" value="yearly"> Yearly</label>
+      </div>
+      <button type="submit" class="primary block">Save</button>
+      <button type="button" class="danger block" id="cat-delete">Delete category</button>
+    </form>
+  </dialog>
+
+  <!-- Settings sheet -->
+  <dialog class="sheet" id="settings-sheet">
+    <div class="sheet-head">
+      <span></span>
+      <h3>Settings</h3>
+      <button type="button" class="link-btn strong" data-close>Done</button>
+    </div>
+    <div class="field-group">
+      <label class="row-field">Currency symbol <input id="currency" maxlength="4" value="$"></label>
+    </div>
+    <div class="field-group">
+      <button class="row-btn" id="export-btn">Export backup</button>
+      <label class="row-btn">Import backup
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </label>
+    </div>
+    <p class="hint">Your data is stored only on this device. Export a backup now and then.</p>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
