@@ -1,7 +1,7 @@
 // GonchiBudget — all data lives in this browser's localStorage.
 
 const STORAGE_KEY = 'gonchibudget.v1';
-const LIMITS = { expense: 10, income: 3 };
+const MAX_CATEGORIES = 10;
 const PERIOD_LABEL = { weekly: 'week', monthly: 'month', yearly: 'year' };
 
 // ---------- State ----------
@@ -19,10 +19,13 @@ function load() {
 }
 
 function normalize(data) {
+  // Only expense categories are used (older versions also had income ones)
+  const categories = (Array.isArray(data.categories) ? data.categories : []).filter(c => c.type !== 'income');
+  const ids = new Set(categories.map(c => c.id));
   return {
     currency: typeof data.currency === 'string' ? data.currency : '$',
-    categories: Array.isArray(data.categories) ? data.categories : [],
-    entries: Array.isArray(data.entries) ? data.entries : [],
+    categories,
+    entries: (Array.isArray(data.entries) ? data.entries : []).filter(e => ids.has(e.categoryId)),
   };
 }
 
@@ -97,64 +100,42 @@ const $ = id => document.getElementById(id);
 // ---------- Rendering ----------
 
 function render() {
-  renderCategories('expense');
-  renderCategories('income');
+  renderCategories();
   renderEntries();
 }
 
-function renderCategories(type) {
-  const cats = state.categories.filter(c => c.type === type);
-  $(`${type}-count`).textContent = `${cats.length}/${LIMITS[type]}`;
-  $(`add-${type}-cat`).disabled = cats.length >= LIMITS[type];
+function renderCategories() {
+  const cats = state.categories;
+  $('expense-count').textContent = `${cats.length}/${MAX_CATEGORIES}`;
+  $('add-expense-cat').disabled = cats.length >= MAX_CATEGORIES;
 
-  const list = $(`${type}-list`);
+  const list = $('expense-list');
   if (!cats.length) {
-    list.innerHTML = `<div class="placeholder">No ${type} categories yet.<br>Tap “+ Category” to add one.</div>`;
+    list.innerHTML = `<div class="placeholder">No categories yet.<br>Tap “+ Category” to add one.</div>`;
     return;
   }
-  list.innerHTML = cats.map(c => (type === 'expense' ? expenseCard(c) : incomeCard(c))).join('');
+  list.innerHTML = cats.map(expenseCard).join('');
 }
 
-function cardShell(c, body) {
-  return `
-    <div class="cat" role="button" tabindex="0" data-log="${c.id}">
-      <div class="cat-top">
-        <span class="cat-name">${esc(c.name)}</span>
-        <button class="cat-edit" data-edit="${c.id}">Edit</button>
-      </div>
-      ${body}
-    </div>`;
-}
 
 function expenseCard(c) {
   const spent = totalInCurrentPeriod(c);
   const left = c.amount - spent;
-  const pct = c.amount > 0 ? Math.min(100, (spent / c.amount) * 100) : (spent > 0 ? 100 : 0);
-  const level = left < 0 ? 'bad' : pct >= 80 ? 'warn' : 'good';
+  const usedPct = c.amount > 0 ? (spent / c.amount) * 100 : (spent > 0 ? 100 : 0);
+  const pct = Math.max(0, 100 - usedPct); // bar = money left
+  const level = left < 0 ? 'bad' : usedPct >= 80 ? 'warn' : 'good';
   const days = daysLeftInPeriod(c.period);
-  const perDay = left > 0 ? `≈ ${money(left / days)}/day` : '';
 
-  return cardShell(c, `
-    <div class="cat-amounts"><span class="big ${level}">${money(left)}</span>
-      <span class="big-label">${left < 0 ? 'over budget' : 'left'}</span></div>
-    <div class="bar ${level}"><div style="width:${pct}%"></div></div>
-    <div class="meta"><span>${money(spent)} of ${money(c.amount)} / ${PERIOD_LABEL[c.period]}</span></div>
-    <div class="meta"><span>${days} day${days === 1 ? '' : 's'} left</span><span>${perDay}</span></div>`);
-}
-
-function incomeCard(c) {
-  const received = totalInCurrentPeriod(c);
-  const pending = c.amount - received;
-  const pct = c.amount > 0 ? Math.min(100, (received / c.amount) * 100) : (received > 0 ? 100 : 0);
-  const days = daysLeftInPeriod(c.period);
-  const status = pending > 0 ? `${money(pending)} to go` : pending < 0 ? `${money(-pending)} extra` : 'complete';
-
-  return cardShell(c, `
-    <div class="cat-amounts"><span class="big good">${money(received)}</span>
-      <span class="big-label">received</span></div>
-    <div class="bar good"><div style="width:${pct}%"></div></div>
-    <div class="meta"><span>Expected ${money(c.amount)} / ${PERIOD_LABEL[c.period]}</span></div>
-    <div class="meta"><span>${days} day${days === 1 ? '' : 's'} left</span><span>${status}</span></div>`);
+  return `
+    <div class="cat" role="button" tabindex="0" data-log="${c.id}">
+      <div class="cat-top">
+        <span class="cat-name">${esc(c.name)}</span>
+        <button class="cat-edit" data-edit="${c.id}" aria-label="Edit ${esc(c.name)}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+        <span class="cat-left ${level}">${money(left)} <small>${left < 0 ? 'over' : 'left'}</small></span>
+      </div>
+      <div class="bar ${level}"><div style="width:${pct}%"></div></div>
+      <div class="meta"><span>of ${money(c.amount)} / ${PERIOD_LABEL[c.period]}</span><span>${days} day${days === 1 ? '' : 's'} left</span></div>
+    </div>`;
 }
 
 function renderEntries() {
@@ -175,15 +156,14 @@ function renderEntries() {
       html += `<div class="day-label">${label}</div>`;
     }
     const cat = byId[e.categoryId];
-    const isIncome = cat && cat.type === 'income';
     html += `
       <div class="entry">
         <div class="entry-main">
           <div class="entry-cat">${cat ? esc(cat.name) : '<em>Deleted</em>'}</div>
           ${e.note ? `<div class="entry-note">${esc(e.note)}</div>` : ''}
         </div>
-        <span class="entry-amt ${isIncome ? 'good' : ''}">${isIncome ? '+' : '−'}${money(e.amount)}</span>
-        <button class="entry-del" data-del="${e.id}" aria-label="Delete entry">✕</button>
+        <span class="entry-amt">−${money(e.amount)}</span>
+        <button class="entry-del" data-del="${e.id}" aria-label="Delete expense"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>
       </div>`;
   }
   $('entry-list').innerHTML = html;
@@ -218,47 +198,35 @@ document.querySelectorAll('dialog.sheet').forEach(d => {
 
 let entryCategoryId = null;
 
-function entryType() {
-  return document.querySelector('input[name="entry-type"]:checked').value;
-}
+let lastCategoryId = null; // pre-selects the category used last time
 
-function renderChips() {
-  const type = entryType();
-  const cats = state.categories.filter(c => c.type === type);
-  if (!cats.some(c => c.id === entryCategoryId)) entryCategoryId = cats.length === 1 ? cats[0].id : null;
-
-  $('entry-chips').innerHTML = cats
-    .map(c => `<button type="button" class="chip ${c.id === entryCategoryId ? 'selected' : ''}" data-chip="${c.id}">${esc(c.name)}</button>`)
+function renderCategorySelect() {
+  const cats = state.categories;
+  if (!cats.some(c => c.id === entryCategoryId)) {
+    entryCategoryId = cats.some(c => c.id === lastCategoryId) ? lastCategoryId : cats[0]?.id ?? null;
+  }
+  $('entry-cat').innerHTML = cats
+    .map(c => `<option value="${c.id}" ${c.id === entryCategoryId ? 'selected' : ''}>${esc(c.name)}</option>`)
     .join('');
-  $('entry-hint').textContent = !cats.length
-    ? `Create an ${type} category first.`
-    : entryCategoryId ? '' : 'Pick a category';
+  $('entry-cat').disabled = !cats.length;
+  $('entry-hint').textContent = cats.length ? '' : 'Create a category first.';
 }
 
 function openEntrySheet(categoryId) {
   const cat = state.categories.find(c => c.id === categoryId);
-  const type = cat ? cat.type : 'expense';
-  document.querySelector(`input[name="entry-type"][value="${type}"]`).checked = true;
   entryCategoryId = cat ? cat.id : null;
   $('entry-currency').textContent = state.currency;
   $('entry-amount').value = '';
   $('entry-note').value = '';
   $('entry-date').value = toISO(new Date());
-  renderChips();
+  renderCategorySelect();
   openSheet($('entry-sheet'));
   $('entry-amount').focus();
 }
 
 $('add-btn').addEventListener('click', () => openEntrySheet(null));
 
-document.querySelectorAll('input[name="entry-type"]').forEach(r => r.addEventListener('change', renderChips));
-
-$('entry-chips').addEventListener('click', e => {
-  const chip = e.target.closest('[data-chip]');
-  if (!chip) return;
-  entryCategoryId = chip.dataset.chip;
-  renderChips();
-});
+$('entry-cat').addEventListener('change', e => { entryCategoryId = e.target.value; });
 
 $('entry-form').addEventListener('submit', e => {
   e.preventDefault();
@@ -270,9 +238,10 @@ $('entry-form').addEventListener('submit', e => {
     return;
   }
   if (!entryCategoryId) {
-    $('entry-hint').textContent = 'Pick a category';
+    $('entry-hint').textContent = 'Create a category first.';
     return;
   }
+  lastCategoryId = entryCategoryId;
   state.entries.push({
     id: uid(),
     categoryId: entryCategoryId,
@@ -288,12 +257,11 @@ $('entry-form').addEventListener('submit', e => {
 
 // ---------- Category sheet ----------
 
-let editing = null; // { id, type }
+let editing = null; // { id }
 
-function openCategorySheet(type, cat) {
-  editing = { id: cat ? cat.id : null, type };
-  $('cat-title').textContent = cat ? 'Edit category' : `New ${type}`;
-  $('cat-amount-label').textContent = type === 'expense' ? 'Budget' : 'Expected';
+function openCategorySheet(cat) {
+  editing = { id: cat ? cat.id : null };
+  $('cat-title').textContent = cat ? 'Edit category' : 'New category';
   $('cat-name').value = cat ? cat.name : '';
   $('cat-amount').value = cat ? cat.amount : '';
   const period = cat ? cat.period : 'monthly';
@@ -314,8 +282,8 @@ $('cat-form').addEventListener('submit', e => {
   if (editing.id) {
     Object.assign(state.categories.find(c => c.id === editing.id), { name, amount, period });
   } else {
-    if (state.categories.filter(c => c.type === editing.type).length >= LIMITS[editing.type]) return;
-    state.categories.push({ id: uid(), type: editing.type, name, amount, period });
+    if (state.categories.length >= MAX_CATEGORIES) return;
+    state.categories.push({ id: uid(), type: 'expense', name, amount, period });
   }
   save();
   $('cat-sheet').close();
@@ -336,22 +304,21 @@ $('cat-delete').addEventListener('click', () => {
   render();
 });
 
-$('add-expense-cat').addEventListener('click', () => openCategorySheet('expense'));
-$('add-income-cat').addEventListener('click', () => openCategorySheet('income'));
+$('add-expense-cat').addEventListener('click', () => openCategorySheet());
 
 // Card taps: "Edit" edits, anywhere else logs an entry in that category
 document.querySelector('main').addEventListener('click', e => {
   const edit = e.target.closest('[data-edit]');
   if (edit) {
     const cat = state.categories.find(c => c.id === edit.dataset.edit);
-    if (cat) openCategorySheet(cat.type, cat);
+    if (cat) openCategorySheet(cat);
     return;
   }
   const card = e.target.closest('[data-log]');
   if (card) return openEntrySheet(card.dataset.log);
 
   const del = e.target.closest('[data-del]');
-  if (del && confirm('Delete this entry?')) {
+  if (del && confirm('Delete this expense?')) {
     state.entries = state.entries.filter(x => x.id !== del.dataset.del);
     save();
     render();

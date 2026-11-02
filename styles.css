@@ -15,20 +15,6 @@
   --safe-t: env(safe-area-inset-top, 0px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1713;
-    --card: #2a221c;
-    --text: #f4eadb;
-    --muted: #a8968a;
-    --border: #3b3129;
-    --accent: #e38a62;
-    --good: #93bf6e;
-    --warn: #e6a64c;
-    --bad: #ec7563;
-    --track: #3b3129;
-  }
-}
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
@@ -66,7 +52,7 @@ main {
   margin: 0 auto;
   padding: 0 16px calc(var(--tabbar-h) + var(--safe-b) + 24px);
 }
-section { margin-top: 16px; }
+section { margin-top: 4px; }
 
 .section-head { display: flex; align-items: center; justify-content: space-between; margin: 0 4px 8px; }
 .section-head h2 { font-size: 20px; margin: 0; }
@@ -81,39 +67,39 @@ section { margin-top: 16px; }
 }
 
 /* ---------- Category cards ---------- */
-.list { display: flex; flex-direction: column; gap: 10px; }
+/* All categories sit in one card, one compact row each */
+.list:has(.cat) { background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(59, 47, 37, .06); overflow: hidden; }
 
 .cat {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 14px 16px;
-  background: var(--card);
-  border-radius: var(--radius);
-  transition: transform .1s;
+  padding: 7px 14px 6px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
 }
-.cat:active { transform: scale(.98); }
-.cat-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.cat-name { font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat:first-child { border-top: none; }
+.cat:active { background: var(--track); }
+.cat-top { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; line-height: 20px; }
+.cat-name { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-edit {
   flex: none;
   color: var(--muted);
-  font-size: 14px;
-  padding: 6px 10px;
-  margin: -6px -10px -6px 0;
+  opacity: .7;
+  width: 30px; height: 20px;
+  display: grid; place-items: center;
   border-radius: 8px;
 }
-.cat-amounts { display: flex; align-items: baseline; gap: 6px; margin: 4px 0 10px; }
-.big { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-.big-label { font-size: 14px; color: var(--muted); }
+.cat-left { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cat-left small { font-size: 12px; font-weight: 500; color: var(--muted); }
 .good { color: var(--good); }
 .warn { color: var(--warn); }
 .bad { color: var(--bad); }
-.bar { height: 8px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.bar { height: 5px; background: var(--track); border-radius: 99px; overflow: hidden; }
 .bar > div { height: 100%; border-radius: 99px; background: var(--good); transition: width .25s; }
 .bar.warn > div { background: var(--warn); }
 .bar.bad > div { background: var(--bad); }
-.meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 8px; }
+.meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 3px; line-height: 15px; }
 
 .placeholder {
   border: 1.5px dashed var(--border);
@@ -133,7 +119,7 @@ section { margin-top: 16px; }
 .entry-cat { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entry-note { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .entry-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.entry-del { width: 40px; height: 40px; color: var(--muted); font-size: 15px; border-radius: 50%; flex: none; }
+.entry-del { width: 40px; height: 40px; color: var(--bad); opacity: .75; border-radius: 50%; flex: none; display: grid; place-items: center; }
 .empty { margin: 40px 0; color: var(--muted); text-align: center; }
 
 /* ---------- Tab bar ---------- */
@@ -200,33 +186,37 @@ dialog::backdrop { background: rgba(0, 0, 0, .4); }
 .segmented label { padding: 6px 14px; border-radius: 7px; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; }
 .segmented input { display: none; }
 .segmented label:has(input:checked) { background: var(--card); box-shadow: 0 1px 3px rgba(59, 47, 37, .15); }
-.cat { box-shadow: 0 1px 2px rgba(59, 47, 37, .06); }
 .segmented.wide { display: flex; margin-bottom: 16px; }
 .segmented.wide label { flex: 1; padding: 8px 0; }
 
+.amount-row { display: flex; align-items: center; gap: 12px; margin: 12px 0 4px; }
 .amount-field {
-  display: flex; justify-content: center; align-items: baseline; gap: 4px;
-  margin: 12px 0 16px;
-  font-size: 44px; font-weight: 700;
+  flex: 1; min-width: 0;
+  display: flex; align-items: baseline; gap: 4px;
+  font-size: 40px; font-weight: 700;
 }
 .amount-field span { color: var(--muted); }
 .amount-field input {
   border: none; background: transparent; outline: none;
-  font-size: 44px; font-weight: 700;
-  width: 6ch; min-width: 2ch;
+  font-size: 40px; font-weight: 700;
+  width: 100%; min-width: 2ch;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   text-align: left;
 }
 
-.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 4px; }
-.chip {
-  padding: 9px 14px;
-  border-radius: 99px;
-  background: var(--card);
+#entry-cat {
+  flex: none;
+  max-width: 50%;
+  -webkit-appearance: none; appearance: none;
+  padding: 10px 34px 10px 14px;
   border: 1.5px solid var(--border);
-  font-size: 15px;
+  border-radius: 12px;
+  background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c8643b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  color: var(--text);
+  font: inherit; font-size: 16px; font-weight: 600;
+  text-overflow: ellipsis;
 }
-.chip.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); color: var(--accent); font-weight: 600; }
 .hint { margin: 8px 4px; color: var(--muted); font-size: 13px; text-align: center; min-height: 1em; }
 
 .field-group { background: var(--card); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
